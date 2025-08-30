@@ -24,8 +24,9 @@ def app():
         st.subheader("Login to your account")
         login_user = st.text_input("Username", key="login_user")
         login_pw = st.text_input("Password", type="password", key="login_pw")
+        login_role = st.selectbox("Role", ["doctor", "patient"], key="login_role")
         if st.button("Login", key="login_btn"):
-            success, msg = login(login_user, login_pw)
+            success, msg = login(login_user, login_pw, login_role)
             if success:
                 st.success(msg)
                 st.session_state.logged_in = True
@@ -38,8 +39,9 @@ def app():
         st.subheader("Create a new account")
         signup_user = st.text_input("Username", key="signup_user")
         signup_pw = st.text_input("Password", type="password", key="signup_pw")
+        signup_role = st.selectbox("Role", ["doctor", "patient"], key="signup_role")
         if st.button("Sign Up", key="signup_btn"):
-            success, msg = signup(signup_user, signup_pw)
+            success, msg = signup(signup_user, signup_pw, signup_role)
             if success:
                 st.success(msg)
             else:

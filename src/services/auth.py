@@ -13,18 +13,21 @@ db = client["vitavoice"]
 users_col = db["users"]
 
 # Signup
-def signup(username,  password):
+def signup(username,  password,role):
     if users_col.find_one({"username": username}):
         return False, "Username already exists"
     hashed_pw = bcrypt.hash(password)
-    users_col.insert_one({"username": username, "password": hashed_pw})
+    users_col.insert_one({"username": username, "password": hashed_pw,"role":role})
     return True, "User created successfully"
 
 # Login
-def login(username, password):
+def login(username, password, role):
     user = users_col.find_one({"username": username})
     if not user:
         return False, "User not found"
     if bcrypt.verify(password, user["password"]):
-        return True, "Login successful"
+        if user["role"] == role:
+            return True, "Login successful"
+        else:
+            return False, "Incorrect role"
     return False, "Incorrect password"
