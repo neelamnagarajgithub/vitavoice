@@ -31,11 +31,8 @@ def app():
             result = queries(st.session_state.username, user_query)
             # Translate result if not English
             if languages_translation[selected_language] != "en-IN":
-                buffer = translate_texts_to_buffer([str(result)], target_language=languages_translation[selected_language])
-                translation_json = buffer.read().decode("utf-8")
-                translation_data = json.loads(translation_json)
-                # Get all translated_texts and join them
-                translated_text = " ".join([t["translated_text"] for t in translation_data["translations"]])
+                response = translate_texts_to_buffer([str(result)], target_language=languages_translation[selected_language])
+                translated_text = response.translations[0].translated_text
             else:
                 translated_text = str(result)
             audio_bytes = stream_tts_to_bytes(translated_text, voice_id=languages[selected_language])

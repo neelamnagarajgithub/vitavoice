@@ -31,7 +31,7 @@ def translate_texts_to_buffer(texts: list[str], target_language: str) -> BytesIO
         target_language=target_language,
         texts=texts
     )
-    buffer = BytesIO()
-    buffer.write(str(response).encode('utf-8'))
-    buffer.seek(0)
-    return buffer
+    # buffer = BytesIO()
+    # buffer.write(str(response).encode('utf-8'))
+    # buffer.seek(0)
+    return response
