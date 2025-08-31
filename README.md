@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="assets/logo.png" alt="VitaVoice Logo" width="180"/>
-</p>
+
 
 <h1 align="center">VitaVoice</h1>
 <p align="center"><i>Your Voice, Your Health</i></p>
