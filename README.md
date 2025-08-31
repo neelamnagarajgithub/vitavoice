@@ -114,7 +114,7 @@ streamlit run src/main.py
 
 ---
 
-## 📁 Folder Structure
+##  Folder Structure
 
 ```
 streamlit-app/
