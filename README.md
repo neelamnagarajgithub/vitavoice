@@ -50,7 +50,9 @@
 
 ##  Architecture
 
-
+<p align="center">
+  <img src="assets/architecture_vitavoice.png" alt="VitaVoice System Architecture" width="700"/>
+</p>
 
 ---
 
