@@ -11,3 +11,4 @@ soundfile==0.13.1
 numpy==2.2.6
 av==14.4.0
 elevenlabs
+fpdf

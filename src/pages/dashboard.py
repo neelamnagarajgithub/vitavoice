@@ -1,11 +1,13 @@
 import streamlit as st
 import numpy as np
-from services.engine import queries
+from services.engine import create_ehr_pdf, queries, generate_ehr
 from services.murfservice import stream_tts_to_bytes, translate_texts_to_buffer
 from services.whisper_stt import speech_to_text, store_audio_in_mongo
 from pymongo import MongoClient
 import os
 import io
+import json
+from datetime import datetime
 
 # MongoDB setup (move this to a config or service file if you prefer)
 MONGO_URI = os.getenv("MONGO_URI")
@@ -38,6 +40,23 @@ def load_chat_history(username):
 def app():
     st.title("AI Doctor Chat")
     st.success(f"Welcome, {st.session_state.username}!")
+
+    # --- EHR Button on top right ---
+    col_ehr, col_spacer = st.columns([3,7])
+    with col_ehr:
+        if st.button("Generate EHR", use_container_width=True):
+            ehr_json = generate_ehr(st.session_state.username, st.session_state.chat_history)
+            try:
+                ehr_data = json.loads(ehr_json)
+            except Exception:
+                ehr_data = {"EHR": ehr_json}
+            pdf_output = create_ehr_pdf(ehr_data, st.session_state.username)
+            st.download_button(
+                label="Download EHR as PDF",
+                data=pdf_output,
+                file_name=f"EHR_{st.session_state.username}_{datetime.now().strftime('%Y%m%d')}.pdf",
+                mime="application/pdf"
+            )
 
     # Initialize chat history
     if "chat_history" not in st.session_state:
@@ -75,7 +94,8 @@ def app():
                 "<b>AI Doctor:</b> {}</div>".format(entry['text']),
                 unsafe_allow_html=True
             )
-            st.audio(entry["audio"], format="audio/wav")
+            if "audio" in entry and entry["audio"]:
+                st.audio(entry["audio"], format="audio/wav")
 
     # --- Input area ---
     if "recognized_text" not in st.session_state:
