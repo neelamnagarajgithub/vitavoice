@@ -123,7 +123,7 @@ def app():
             # Store audio in MongoDB
             audio_id = store_audio_in_mongo(st.session_state.username, buf)
 
-            # Run Whisper STT
+            
             recognized = speech_to_text(audio_id)
             st.session_state.recognized_text = recognized
 
