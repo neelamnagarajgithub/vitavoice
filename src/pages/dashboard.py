@@ -7,6 +7,8 @@ from services.murfservice import stream_tts_to_bytes, translate_texts_to_buffer
 from services.whisper_stt import speech_to_text
 from pymongo import MongoClient
 import os
+import soundfile as sf
+import io
 
 class AudioProcessor(AudioProcessorBase):
     def __init__(self):
@@ -45,6 +47,12 @@ def load_chat_history(username):
         chat_history.append(entry)
     return chat_history
 
+def save_mic_audio_locally(audio_frames, filename="mic_input.wav"):
+    if audio_frames:
+        audio_np = np.concatenate(audio_frames).astype(np.int16)
+        sf.write(filename, audio_np, 16000, format="WAV")
+        return filename
+    return None
 
 def app():
     st.title("AI Doctor Chat")
@@ -110,21 +118,28 @@ def app():
     if "mic_audio_frames" not in st.session_state:
         st.session_state.mic_audio_frames = []
 
+    # Clear buffer before new recording
+    if st.button("START"):
+        st.session_state.mic_audio_frames = []
+        st.session_state.mic_audio_saved = False
+        st.session_state.mic_audio_path = None
+
     if ctx.audio_processor is not None and hasattr(ctx.audio_processor, "audio_frames"):
         st.session_state.mic_audio_frames = ctx.audio_processor.audio_frames
 
-    if st.button("Transcribe Mic Input"):
-        audio_frames = st.session_state.mic_audio_frames
-        if audio_frames:
-            import soundfile as sf
-            import io
-            audio_np = np.concatenate(audio_frames).astype(np.int16)
-            buf = io.BytesIO()
-            sf.write(buf, audio_np, 16000, format="WAV")
-            buf.seek(0)
+        # Save audio when recording stops (i.e., when there are frames and not already saved)
+        if st.session_state.mic_audio_frames and not st.session_state.get("mic_audio_saved", False):
+            audio_path = save_mic_audio_locally(st.session_state.mic_audio_frames, f"{st.session_state.username}_mic_input.wav")
+            st.session_state.mic_audio_saved = True
+            st.session_state.mic_audio_path = audio_path
 
+    if st.button("Transcribe Mic Input"):
+        audio_path = st.session_state.get("mic_audio_path")
+        if audio_path and os.path.exists(audio_path):
+            with open(audio_path, "rb") as f:
+                buf = io.BytesIO(f.read())
             # Store audio in MongoDB and get audio_id
-            from services.whisper_stt import store_audio_in_mongo
+            from services.whisper_stt import store_audio_in_mongo, speech_to_text
             audio_id = store_audio_in_mongo(st.session_state.username, buf)
 
             with st.spinner("Transcribing..."):
@@ -134,7 +149,7 @@ def app():
             st.success("Transcription complete!")
             st.rerun()
         else:
-            st.warning("No audio captured. Please record and try again.")
+            st.warning("No audio file found. Please record and try again.")
 
     # Send message (typed or transcribed)
     if st.button("Send"):
