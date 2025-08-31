@@ -42,6 +42,10 @@ def app():
     st.success(f"Welcome, {st.session_state.username}!")
 
     # --- EHR Button on top right ---
+    if st.button("👨‍⚕️ Consult a Doctor"):
+        st.session_state.page = "ConsultDoctor"
+        st.rerun()
+        
     col_ehr, col_spacer = st.columns([3,7])
     with col_ehr:
         if st.button("Generate EHR", use_container_width=True):
