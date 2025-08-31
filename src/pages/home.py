@@ -1,19 +1,18 @@
 import streamlit as st
 from services.auth import signup, login
 from pages.dashboard import load_chat_history  
+
 def app():
     st.set_page_config(
         page_title="VitaVoice",
         layout="centered"
     )
 
-    # --- HERO SECTION ---
+    # --- LOGO & HERO SECTION ---
+    st.image("assets/logo.png", width=120)  # Logo at the top (adjust path if needed)
     st.markdown("""
     <h1 style='text-align: center; margin-bottom: 0.2em;'>VitaVoice</h1>
     <h4 style='text-align: center; color: #555; margin-top: 0;'>Your Voice, Your Health</h4>
-    <p style='text-align: center; color: #888; max-width: 600px; margin: auto;'>
-        AI-powered healthcare voice assistant that listens, understands, and helps you stay healthy.
-    </p>
     """, unsafe_allow_html=True)
 
     st.divider()
@@ -45,39 +44,52 @@ def app():
             success, msg = signup(signup_user, signup_pw, signup_role)
             if success:
                 st.success(msg)
+                st.session_state.logged_in = True
+                st.session_state.username = signup_user
+                st.session_state.role = signup_role
+                if signup_role == "patient":
+                    st.session_state.chat_history = load_chat_history(signup_user)
+                else:
+                    st.session_state.chat_history = []
+                st.session_state.page = "Dashboard"
+                st.rerun()
             else:
                 st.error(msg)
 
     st.divider()
 
-    # --- FEATURES ---
-    st.header("Features")
+    # --- WHAT'S NEW / ANNOUNCEMENTS ---
+    st.header("What's New")
     st.markdown("""
-    - Voice-powered consultations  
-    - Personalized health dashboard  
-    - Secure medical record storage  
-    - AI-driven health insights  
-    - Smart reminders for medicines  
+    - **Automatic EHR Generation:** Instantly create downloadable Electronic Health Records from your chat history.
+    - **AI Voice Conversations:** Talk to the AI doctor using your voice—powered by advanced Speech-to-Text (STT) and Text-to-Speech (TTS).
+    - **Multilingual Support:** Converse in your preferred language and get real-time voice responses.
+    - **Secure Data Handling:** All your health data is encrypted and private.
     """)
 
     st.divider()
 
-    # --- ABOUT ---
-    st.header("About VitaVoice")
-    st.write(
-       "VitaVoice is a voice-powered healthcare assistant that enables users to track, manage, and understand their health through natural voice interactions. It integrates medical record storage, AI-driven health insights, and real-time voice analysis, making healthcare more accessible and personalized."
-    )
+    # --- HOW IT WORKS ---
+    st.header("How It Works")
+    st.markdown("""
+    1. **Sign up or log in** as a patient or doctor.
+    2. **Chat with the AI doctor** using voice or text—your speech is transcribed and understood by the AI.
+    3. **Receive instant, natural-sounding voice replies** in your chosen language.
+    4. **Download your EHR summary** generated from your conversation at any time.
+    5. **Track your health insights** and revisit your chat history securely.
+    """)
 
     st.divider()
 
-    # --- DASHBOARD PREVIEW ---
-    st.header("Dashboard Preview")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.image("https://placehold.co/400x250?text=Health+Summary", caption="Health Summary")
-    with col2:
-        st.image("https://placehold.co/400x250?text=Trends+and+Insights", caption="Trends & Insights")
-    st.info("Login to explore your personalized health assistant.")
+    # --- WHY CHOOSE US ---
+    st.header("Why Choose VitaVoice?")
+    st.markdown("""
+    - **Automatic EHR summaries** for every conversation.
+    - **AI-powered, natural voice chat** with advanced TTS and STT.
+    - **Multi-language support** for inclusive healthcare.
+    - **Downloadable health records** for easy sharing and continuity of care.
+    - **End-to-end encryption** for your privacy and security.
+    """)
 
     st.divider()
 

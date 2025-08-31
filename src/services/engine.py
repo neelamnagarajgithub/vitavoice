@@ -5,7 +5,7 @@ from passlib.hash import bcrypt
 import requests
 import json
 from fpdf import FPDF
-import json
+import re
 from datetime import datetime
 
 load_dotenv()  # Load variables from .env
@@ -161,3 +161,78 @@ def create_ehr_pdf(ehr_data, username):
     
     pdf_output = pdf.output(dest="S").encode("latin1")
     return pdf_output
+
+def recommend_doctors(chat_history, all_doctors):
+    """
+    Use LLM to recommend doctors based on chat history and available doctors.
+    Returns a list of recommended doctor usernames.
+    """
+    # Prepare chat history as text
+    chat_lines = []
+    for entry in chat_history:
+        if entry["role"] == "user":
+            chat_lines.append(f"Patient: {entry['text']}")
+        else:
+            chat_lines.append(f"AI Doctor: {entry['text']}")
+    chat_text = "\n".join(chat_lines)
+
+    # Prepare doctors info as text
+    doctors_text = "\n".join([
+        f"{doc['username']}: {doc['name']}, {doc['specialization']}, {doc.get('hospital','')}"
+        for doc in all_doctors
+    ])
+
+    prompt = (
+        "You are a smart medical assistant. Based on the following patient-AI chat history and the list of available doctors, "
+        "recommend the most suitable doctors for the patient. "
+        "Return ONLY a JSON list of doctor usernames (from the provided list) who are the best fit for the patient's needs.\n\n"
+        f"Chat History:\n{chat_text}\n\n"
+        f"Available Doctors:\n{doctors_text}\n\n"
+        "Recommended doctor usernames (JSON list):"
+    )
+
+    api_url = "https://openrouter.ai/api/v1/chat/completions"
+    api_key = os.getenv("OPEN_ROUTER_KEY")
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "model": "openai/gpt-3.5-turbo",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 200
+    }
+
+    response = requests.post(api_url, headers=headers, data=json.dumps(data))
+    result = response.json()
+    content = result["choices"][0]["message"]["content"] if "choices" in result else str(result)
+    print("LLM raw output for doctor recommendation:", content)  # <-- Print LLM output
+
+    # Try to extract JSON list or usernames from the LLM output
+    usernames = []
+    try:
+        # Try to find a JSON list in the output
+        match = re.search(r"\[[^\]]+\]", content, re.DOTALL)
+        if match:
+            usernames = json.loads(match.group(0))
+        else:
+            # Try to find a JSON object with a key like "recommended_doctors"
+            match_obj = re.search(r"\{.*\}", content, re.DOTALL)
+            if match_obj:
+                obj = json.loads(match_obj.group(0))
+                # Try common keys
+                for key in ["recommended_doctors", "usernames", "doctors"]:
+                    if key in obj and isinstance(obj[key], list):
+                        usernames = obj[key]
+                        break
+        # Fallback: try to extract usernames from lines like "1. dr_priya_derm3"
+        if not usernames:
+            usernames = re.findall(r"\bdr_[\w\d]+", content)
+    except Exception as e:
+        print("Error parsing LLM output:", e)
+        usernames = []
+    return usernames

@@ -20,14 +20,12 @@ def signup(username,  password,role):
     users_col.insert_one({"username": username, "password": hashed_pw,"role":role})
     return True, "User created successfully"
 
-# Login
 def login(username, password, role):
-    user = users_col.find_one({"username": username})
-    if not user:
-        return False, "User not found"
-    if bcrypt.verify(password, user["password"]):
-        if user["role"] == role:
-            return True, "Login successful"
-        else:
-            return False, "Incorrect role"
-    return False, "Incorrect password"
+    if role == "doctor":
+        user = db["doctors"].find_one({"username": username})
+    else:
+        user = db["users"].find_one({"username": username})
+    if user and bcrypt.verify(password, user["password"]):
+        return True, "Login successful!"
+    else:
+        return False, "Invalid username or password."
