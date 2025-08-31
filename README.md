@@ -144,7 +144,7 @@ We welcome contributions in UI/UX, backend, AI/NLP, and documentation.
 ##  Contact
 
 - Email: neelamnagaraj99@gmail.com
-- website: [vitavoice.streamlit.app](vitavoice.streamlit.app)
+- website: [vitavoice.streamlit.app](https://vitavoice.streamlit.app)
 
 ---
 
