@@ -3,3 +3,5 @@ pymongo>=4.5
 passlib[bcrypt]>=1.7
 python-dotenv>=1.0
 murf
+streamlit-webrtc
+whisper

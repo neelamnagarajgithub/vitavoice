@@ -1,6 +1,6 @@
 import streamlit as st
 from services.auth import signup, login
-
+from pages.dashboard import load_chat_history  
 def app():
     st.set_page_config(
         page_title="VitaVoice",
@@ -31,6 +31,7 @@ def app():
                 st.success(msg)
                 st.session_state.logged_in = True
                 st.session_state.username = login_user
+                st.session_state.chat_history = load_chat_history(login_user)
                 st.session_state.page = "Dashboard"
                 st.rerun()
             else:
