@@ -7,14 +7,12 @@
 
 ---
 
-<p align="center">
-  <b>Demo Video</b><br>
-  <video width="480" controls>
-    <source src="assets/vitavoice_video.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-</p>
 
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=ReAZj7ClfzA" target="_blank">
+    <img src="https://img.youtube.com/vi/ReAZj7ClfzA/0.jpg" alt="VitaVoice Demo" width="500"/>
+  </a>
+</p>
 
 ---
 
@@ -54,17 +52,7 @@
 
 ##  Architecture
 
-```mermaid
-flowchart TD
-    A[User (Web/Voice)] -->|Voice/Text| B[Streamlit Frontend]
-    B -->|Audio| C[Speech-to-Text (STT)]
-    C -->|Text| D[AI Chat Engine (LLM)]
-    D -->|Text| E[Murf AI TTS & Translation]
-    D -->|Text| F[EHR Generator]
-    E -->|Streaming Audio| B
-    F -->|EHR PDF| B
-    B -->|API| G[MongoDB (User, Doctor, Chat, EHR)]
-```
+
 
 ---
 
