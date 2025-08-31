@@ -1,23 +1,11 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, AudioProcessorBase
-import av
 import numpy as np
 from services.engine import queries
 from services.murfservice import stream_tts_to_bytes, translate_texts_to_buffer
-from services.whisper_stt import speech_to_text
+from services.whisper_stt import speech_to_text, store_audio_in_mongo
 from pymongo import MongoClient
 import os
-import soundfile as sf
 import io
-
-class AudioProcessor(AudioProcessorBase):
-    def __init__(self):
-        self.audio_frames = []
-
-    def recv(self, frame: av.AudioFrame) -> av.AudioFrame:
-        pcm = frame.to_ndarray().flatten()
-        self.audio_frames.append(pcm)
-        return frame
 
 # MongoDB setup (move this to a config or service file if you prefer)
 MONGO_URI = os.getenv("MONGO_URI")
@@ -46,13 +34,6 @@ def load_chat_history(username):
             entry["audio"] = BytesIO(doc["audio"])
         chat_history.append(entry)
     return chat_history
-
-def save_mic_audio_locally(audio_frames, filename="mic_input.wav"):
-    if audio_frames:
-        audio_np = np.concatenate(audio_frames).astype(np.int16)
-        sf.write(filename, audio_np, 16000, format="WAV")
-        return filename
-    return None
 
 def app():
     st.title("AI Doctor Chat")
@@ -106,50 +87,24 @@ def app():
         key="user_query"
     )
 
-    # Record button below text field
+    # Record audio input with Streamlit
     st.markdown("##### Or record your message:")
-    ctx = webrtc_streamer(
-        key="speech",
-        audio_receiver_size=4096,
-        media_stream_constraints={"audio": True, "video": False},
-        audio_processor_factory=AudioProcessor,
-        async_processing=False,
-    )
-    if "mic_audio_frames" not in st.session_state:
-        st.session_state.mic_audio_frames = []
+    audio_file = st.audio_input("Record your voice")
 
-    # Clear buffer before new recording
-    if st.button("START"):
-        st.session_state.mic_audio_frames = []
-        st.session_state.mic_audio_saved = False
-        st.session_state.mic_audio_path = None
+    if audio_file is not None:
+        with st.spinner("Transcribing..."):
+            audio_bytes = audio_file.getvalue()
+            buf = io.BytesIO(audio_bytes)
 
-    if ctx.audio_processor is not None and hasattr(ctx.audio_processor, "audio_frames"):
-        st.session_state.mic_audio_frames = ctx.audio_processor.audio_frames
-
-        # Save audio when recording stops (i.e., when there are frames and not already saved)
-        if st.session_state.mic_audio_frames and not st.session_state.get("mic_audio_saved", False):
-            audio_path = save_mic_audio_locally(st.session_state.mic_audio_frames, f"{st.session_state.username}_mic_input.wav")
-            st.session_state.mic_audio_saved = True
-            st.session_state.mic_audio_path = audio_path
-
-    if st.button("Transcribe Mic Input"):
-        audio_path = st.session_state.get("mic_audio_path")
-        if audio_path and os.path.exists(audio_path):
-            with open(audio_path, "rb") as f:
-                buf = io.BytesIO(f.read())
-            # Store audio in MongoDB and get audio_id
-            from services.whisper_stt import store_audio_in_mongo, speech_to_text
+            # Store audio in MongoDB
             audio_id = store_audio_in_mongo(st.session_state.username, buf)
 
-            with st.spinner("Transcribing..."):
-                recognized = speech_to_text(audio_id)
-                st.session_state.recognized_text = recognized
+            # Run Whisper STT
+            recognized = speech_to_text(audio_id)
+            st.session_state.recognized_text = recognized
 
-            st.success("Transcription complete!")
-            st.rerun()
-        else:
-            st.warning("No audio file found. Please record and try again.")
+        st.success("Transcription complete!")
+        st.rerun()
 
     # Send message (typed or transcribed)
     if st.button("Send"):
@@ -157,6 +112,7 @@ def app():
         if query_text:
             # Add user message to chat history
             st.session_state.chat_history.append({"role": "user", "text": query_text})
+            save_message(st.session_state.username, "user", query_text)
 
             # Get AI response and TTS audio
             result = queries(st.session_state.username, query_text)
